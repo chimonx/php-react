@@ -18,14 +18,12 @@ function Login({ onLoginSuccess }) {
     setLoading(true); // Show a loading indicator
 
     try {
-      // Send login request to the server
       const response = await fetch('https://login.smobu.cloud/react.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: formData.toString(),
-        credentials: 'include', // Include cookies with the request
       });
 
       const result = await response.json();
@@ -39,7 +37,9 @@ function Login({ onLoginSuccess }) {
           loginTime: new Date().toISOString(),
         });
 
-        // Do not store sensitive information in localStorage
+        // Save the username to localStorage
+        localStorage.setItem('username', username);
+
         onLoginSuccess(username); // Pass the username to the parent component
       } else {
         alert('Login failed: ' + result.message);
