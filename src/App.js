@@ -31,7 +31,6 @@ function App() {
 
   return (
     <div className="container">
-      <h1>Post Management App</h1>
       {isAuthenticated ? (
         <div>
           <p>Welcome, {username}!</p>

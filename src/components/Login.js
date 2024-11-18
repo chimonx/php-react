@@ -53,7 +53,7 @@ function Login({ onLoginSuccess }) {
 
   return (
     <div style={styles.container}>
-      <h2>Login</h2>
+      <h2>Login by BU Account</h2>
       <form onSubmit={handleLogin} style={styles.form}>
         <input
           type="text"
