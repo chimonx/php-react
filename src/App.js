@@ -55,34 +55,29 @@ function MainApp({ isAuthenticated, username, handleLoginSuccess, handleLogout }
 
   return (
     <div>
-      {/* Show navigator only if not on the login page */}
+      {/* Navbar */}
       {location.pathname !== '/login' && (
-        <nav className="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
-          <div className="container">
-            <Link className="navbar-brand text-primary" to="/">
+        <nav className="navbar navbar-light bg-light shadow-sm">
+          <div className="container d-flex justify-content-between align-items-center">
+            <Link className="navbar-brand text-dark" to="/">
               Post App
             </Link>
-            <div className="collapse navbar-collapse">
-              <ul className="navbar-nav ms-auto">
-                {isAuthenticated ? (
-                  <>
-                    <li className="nav-item">
-                      <span className="nav-link">Welcome, {username}!</span>
-                    </li>
-                    <li className="nav-item">
-                      <button className="btn btn-danger btn-sm nav-link" onClick={handleLogout}>
-                        Logout
-                      </button>
-                    </li>
-                  </>
-                ) : (
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/login">
-                      Login
-                    </Link>
-                  </li>
-                )}
-              </ul>
+            <div className="d-flex">
+              {isAuthenticated ? (
+                <>
+                  <span className="nav-link text-dark me-3">Welcome, {username}!</span>
+                  <button
+                    className="btn btn-link nav-link text-danger"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link className="nav-link text-muted" to="/login">
+                  Login
+                </Link>
+              )}
             </div>
           </div>
         </nav>
