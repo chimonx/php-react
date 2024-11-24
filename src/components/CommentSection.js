@@ -1,44 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase/firebaseConfig';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
 
-function CommentSection({ postId, username }) {
-  const [comment, setComment] = useState('');
+function CommentSection({ postId, username, isAuthenticated }) {
   const [comments, setComments] = useState([]);
+  const [comment, setComment] = useState('');
 
-  // Function to fetch comments from Firestore
   useEffect(() => {
     const fetchComments = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'posts', postId, 'comments'));
-        const commentsArray = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setComments(commentsArray);
-      } catch (error) {
-        console.error('Error fetching comments:', error);
-      }
+      const commentsRef = collection(db, 'posts', postId, 'comments');
+      const querySnapshot = await getDocs(commentsRef);
+      const commentsArray = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setComments(commentsArray);
     };
-
     fetchComments();
   }, [postId]);
 
-  // Function to handle comment submission
-  const handleCommentSubmit = async (e) => {
+  const handleAddComment = async (e) => {
     e.preventDefault();
-
-    if (comment.trim() === '') return; // Prevent empty comments
-
+    if (!isAuthenticated) {
+      alert('You need to log in to add a comment.');
+      return;
+    }
     try {
-      // Add comment to Firestore with the username
-      await addDoc(collection(db, 'posts', postId, 'comments'), {
+      const commentsRef = collection(db, 'posts', postId, 'comments');
+      await addDoc(commentsRef, {
         text: comment,
-        username, // Include the username in the comment
+        username: username,
         createdAt: new Date().toISOString(),
       });
-      setComment(''); // Clear input after submission
-
-      // Re-fetch comments to update the UI
-      const querySnapshot = await getDocs(collection(db, 'posts', postId, 'comments'));
-      const commentsArray = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setComment('');
+      const querySnapshot = await getDocs(commentsRef);
+      const commentsArray = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setComments(commentsArray);
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -46,20 +39,25 @@ function CommentSection({ postId, username }) {
   };
 
   return (
-    <div className="comment-section">
-      <form onSubmit={handleCommentSubmit}>
-        <input
-          type="text"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Write a comment"
-          required
-        />
-        <button type="submit">Comment</button>
-      </form>
+    <div className="mt-3">
+      {isAuthenticated && (
+        <form onSubmit={handleAddComment} className="d-flex mb-2">
+          <input
+            type="text"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Write a comment..."
+            className="form-control me-2"
+            required
+          />
+          <button type="submit" className="btn btn-primary">
+            Comment
+          </button>
+        </form>
+      )}
       <div>
         {comments.map((comment) => (
-          <p key={comment.id}>
+          <p key={comment.id} className="mb-1">
             <strong>{comment.username}:</strong> {comment.text}
           </p>
         ))}

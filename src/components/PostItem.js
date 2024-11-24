@@ -3,7 +3,7 @@ import { db } from '../firebase/firebaseConfig';
 import { doc, deleteDoc, updateDoc, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import CommentSection from './CommentSection';
 
-function PostItem({ post, onPostDeleted, username }) {
+function PostItem({ post, onPostDeleted, username, isAuthenticated }) {
   const [likes, setLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
 
@@ -14,13 +14,20 @@ function PostItem({ post, onPostDeleted, username }) {
       if (postDoc.exists()) {
         const postData = postDoc.data();
         setLikes(postData.likes || 0);
-        setIsLiked(postData.likedBy?.includes(username) || false);
+        if (isAuthenticated) {
+          setIsLiked(postData.likedBy?.includes(username) || false);
+        }
       }
     };
     fetchLikes();
-  }, [post.id, username]);
+  }, [post.id, username, isAuthenticated]);
 
   const handleLike = async () => {
+    if (!isAuthenticated) {
+      alert('You need to log in to like posts.');
+      return;
+    }
+
     const postRef = doc(db, 'posts', post.id);
     try {
       if (isLiked) {
@@ -43,6 +50,11 @@ function PostItem({ post, onPostDeleted, username }) {
   };
 
   const handleDelete = async () => {
+    if (!isAuthenticated) {
+      alert('You need to log in to delete posts.');
+      return;
+    }
+
     const confirmDelete = window.confirm('Are you sure you want to delete this post?');
     if (confirmDelete) {
       const postRef = doc(db, 'posts', post.id);
@@ -58,21 +70,24 @@ function PostItem({ post, onPostDeleted, username }) {
   };
 
   return (
-    <div className="post-item">
-      <h2>{post.title}</h2>
-      <p>{post.content}</p>
-      <p>Posted by: {post.username}</p>
-      <div className="button-container">
-        <button className="like-btn" onClick={handleLike}>
-          {isLiked ? 'Unlike' : 'Like'} ({likes})
-        </button>
-        {post.username === username && (
-          <button className="delete-btn" onClick={handleDelete}>
-            Delete Post
+    <div className="card shadow-sm">
+      <div className="card-body">
+        <h5 className="card-title text-primary">{post.title}</h5>
+        <p className="card-text">{post.content}</p>
+        <p className="text-muted">Posted by: {post.username}</p>
+        <div className="d-flex justify-content-between">
+          <button className="btn btn-warning btn-sm" onClick={handleLike}>
+            {isLiked ? 'Unlike' : 'Like'} ({likes})
           </button>
-        )}
+          {isAuthenticated && post.username === username && (
+            <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+              Delete Post
+            </button>
+          )}
+        </div>
+        {/* Show comment section */}
+        <CommentSection postId={post.id} username={username} isAuthenticated={isAuthenticated} />
       </div>
-      <CommentSection postId={post.id} username={username} />
     </div>
   );
 }

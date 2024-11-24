@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2'; // Import SweetAlert2
 import { db } from '../firebase/firebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
+import './Login.css'; // Import the external CSS file
 
 function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Function to handle login
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -15,10 +16,10 @@ function Login({ onLoginSuccess }) {
     formData.append('username', username);
     formData.append('password', password);
 
-    setLoading(true); // Show a loading indicator
+    setLoading(true);
 
     try {
-      const response = await fetch('https://login.smobu.cloud/react.php', {
+      const response = await fetch('https://login.smobu.cloud/bu_kunkorn.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -29,7 +30,15 @@ function Login({ onLoginSuccess }) {
       const result = await response.json();
 
       if (result.status === 'studentOK' || result.status === 'facultyOK') {
-        alert(`Login successful: ${result.status === 'studentOK' ? 'Student' : 'Faculty'}`);
+        // Show a success alert
+        Swal.fire({
+          title: 'Login Successful',
+          text: `Welcome, ${username}`,
+          icon: 'success',
+          timer: 3000, // Close after 3 seconds
+          timerProgressBar: true, // Show the timer progress bar
+          showConfirmButton: false, // Hide the confirm button
+        });
 
         // Save login info to Firestore
         await addDoc(collection(db, 'logins'), {
@@ -37,78 +46,61 @@ function Login({ onLoginSuccess }) {
           loginTime: new Date().toISOString(),
         });
 
-        // Save the username to localStorage
+        // Save username to localStorage
         localStorage.setItem('username', username);
 
-        onLoginSuccess(username); // Pass the username to the parent component
+        onLoginSuccess(username);
       } else {
-        alert('Login failed: ' + result.message);
+        // Show an error alert
+        Swal.fire({
+          title: 'Login Failed',
+          text: result.message,
+          icon: 'error',
+          confirmButtonColor: '#d33',
+          confirmButtonText: 'Try Again',
+        });
       }
     } catch (error) {
-      alert('Error during login: ' + error.message);
+      // Show an error alert for fetch failure
+      Swal.fire({
+        title: 'Error',
+        text: 'An error occurred during login. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+      });
     } finally {
-      setLoading(false); // Hide the loading indicator
+      setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <h2>Login by BU Account</h2>
-      <form onSubmit={handleLogin} style={styles.form}>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username"
-          required
-          style={styles.input}
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          required
-          style={styles.input}
-        />
-        <button type="submit" style={styles.button} disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+    <div className="login-container">
+      <div className="login-card">
+        <h2 className="login-heading">Login by BU Account</h2>
+        <form onSubmit={handleLogin} className="login-form">
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Username"
+            required
+            className="login-input"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            className="login-input"
+          />
+          <button type="submit" className="login-button" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    maxWidth: '400px',
-    margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#fff',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    textAlign: 'center',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  input: {
-    padding: '10px',
-    margin: '10px 0',
-    borderRadius: '5px',
-    border: '1px solid #ddd',
-  },
-  button: {
-    padding: '10px',
-    backgroundColor: '#007bff',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    transition: 'background-color 0.3s',
-  },
-};
 
 export default Login;

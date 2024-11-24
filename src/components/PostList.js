@@ -4,14 +4,13 @@ import { collection, getDocs } from 'firebase/firestore';
 import PostForm from './PostForm';
 import PostItem from './PostItem';
 
-function PostList({ username }) {
+function PostList({ username, isAuthenticated }) {
   const [posts, setPosts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Function to fetch posts from Firestore
   const fetchPosts = async () => {
     const querySnapshot = await getDocs(collection(db, 'posts'));
-    const postsArray = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const postsArray = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     setPosts(postsArray);
   };
 
@@ -19,52 +18,39 @@ function PostList({ username }) {
     fetchPosts();
   }, []);
 
-  // Function to handle search input
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value.toLowerCase());
-  };
-
-  // Filtered posts based on the search query
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(searchQuery) ||
-    post.content.toLowerCase().includes(searchQuery) ||
-    post.username.toLowerCase().includes(searchQuery) // Search by username
+  const filteredPosts = posts.filter(
+    (post) =>
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div>
-      <div style={styles.formContainer}>
-        <PostForm username={username} onPostAdded={fetchPosts} />
-      </div>
-      <div style={styles.searchContainer}>
+      {/* Allow post creation only if logged in */}
+      {isAuthenticated && <PostForm username={username} onPostAdded={fetchPosts} />}
+      <div className="my-3">
         <input
           type="text"
+          className="form-control"
           placeholder="Search posts..."
           value={searchQuery}
-          onChange={handleSearch}
-          style={styles.searchInput}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
-      {filteredPosts.map(post => (
-        <PostItem key={post.id} post={post} onPostDeleted={fetchPosts} username={username} />
-      ))}
+      <div className="row">
+        {filteredPosts.map((post) => (
+          <div className="col-md-6 mb-4" key={post.id}>
+            <PostItem
+              post={post}
+              username={username}
+              isAuthenticated={isAuthenticated}
+              onPostDeleted={fetchPosts}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
-
-const styles = {
-  formContainer: {
-    marginBottom: '10px',
-  },
-  searchContainer: {
-    marginBottom: '20px',
-  },
-  searchInput: {
-    padding: '8px',
-    border: '1px solid #ddd',
-    borderRadius: '5px',
-    width: '100%',
-  },
-};
 
 export default PostList;
