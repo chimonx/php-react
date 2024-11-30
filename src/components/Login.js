@@ -12,59 +12,83 @@ function Login({ onLoginSuccess }) {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    const formData = new URLSearchParams();
-    formData.append('username', username);
-    formData.append('password', password);
+    // Validate username with regex: any text + "." + exactly 1 or 4 letters only
+    const usernamePattern = /^[a-zA-Z0-9]+\.[a-zA-Z]{1}$|^[a-zA-Z0-9]+\.[a-zA-Z]{4}$/;
+
+    if (!usernamePattern.test(username)) {
+      Swal.fire({
+        title: 'Invalid Username',
+        text: 'Please use the format: Firstname.Lastname (e.g., kunkorn.trak)',
+        icon: 'error',
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Try Again',
+      });
+      return;
+    }
 
     setLoading(true);
 
     try {
-      const response = await fetch('https://login.smobu.cloud/bu_kunkorn.php', {
+      // Ensure the security key is defined
+      const securityKey = process.env.REACT_APP_SECURITY_KEY;
+      if (!securityKey) {
+        throw new Error('Security key is not configured in the environment variables.');
+      }
+
+      // Hash the security key using Web Crypto API and encode in Base64
+      const encoder = new TextEncoder();
+      const data = encoder.encode(securityKey);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashedKey = btoa(String.fromCharCode(...hashArray));
+
+      // Prepare form data
+      const formData = new URLSearchParams();
+      formData.append('username', username);
+      formData.append('password', password);
+      formData.append('security_key', hashedKey);
+
+      const response = await fetch('https://login.smobu.cloud/secure_react.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: formData.toString(),
+        credentials: 'include', // Include credentials to send cookies
       });
 
       const result = await response.json();
 
       if (result.status === 'studentOK' || result.status === 'facultyOK') {
-        // Show a success alert
         Swal.fire({
           title: 'Login Successful',
           text: `Welcome, ${username}`,
           icon: 'success',
           timer: 3000, // Close after 3 seconds
-          timerProgressBar: true, // Show the timer progress bar
-          showConfirmButton: false, // Hide the confirm button
+          timerProgressBar: true,
+          showConfirmButton: false,
         });
 
-        // Save login info to Firestore
+        // Log login event to Firestore
         await addDoc(collection(db, 'logins'), {
           username: username,
           loginTime: new Date().toISOString(),
         });
 
-        // Save username to localStorage
-        localStorage.setItem('username', username);
-
         onLoginSuccess(username);
       } else {
-        // Show an error alert
         Swal.fire({
           title: 'Login Failed',
-          text: result.message,
+          text: result.message || 'Invalid credentials. Please try again.',
           icon: 'error',
           confirmButtonColor: '#d33',
           confirmButtonText: 'Try Again',
         });
       }
     } catch (error) {
-      // Show an error alert for fetch failure
       Swal.fire({
         title: 'Error',
-        text: 'An error occurred during login. Please try again.',
+        text: error.message || 'An error occurred during login. Please try again.',
         icon: 'error',
         confirmButtonText: 'OK',
       });
