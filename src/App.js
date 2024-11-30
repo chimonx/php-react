@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate, Link, useLocation } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+  Link,
+  useLocation,
+} from 'react-router-dom';
 import PostList from './components/PostList';
 import Login from './components/Login';
 
@@ -7,12 +14,51 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
 
+  // Function to check session by calling check_session.php
   useEffect(() => {
-    const storedUsername = localStorage.getItem('username');
-    if (storedUsername) {
-      setIsAuthenticated(true);
-      setUsername(storedUsername);
-    }
+    const checkSession = async () => {
+      try {
+        // Get the security key from the environment variable
+        const securityKey = process.env.REACT_APP_SECURITY_KEY;
+
+        // Hash the security key using the Web Crypto API and encode in Base64
+        const encoder = new TextEncoder();
+        const data = encoder.encode(securityKey);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashString = String.fromCharCode(...hashArray);
+        const hashedKey = btoa(hashString);
+
+        // Prepare form data
+        const formData = new URLSearchParams();
+        formData.append('security_key', hashedKey); // Include the hashed key
+
+        const response = await fetch('https://login.smobu.cloud/check_session.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData.toString(),
+          credentials: 'include', // Include credentials to send cookies
+        });
+
+        const result = await response.json();
+
+        if (result.loggedIn) {
+          setIsAuthenticated(true);
+          setUsername(result.username);
+        } else {
+          setIsAuthenticated(false);
+          setUsername('');
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        setIsAuthenticated(false);
+        setUsername('');
+      }
+    };
+
+    checkSession();
   }, []);
 
   const handleLoginSuccess = (loggedInUsername) => {
@@ -20,10 +66,37 @@ function App() {
     setUsername(loggedInUsername);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('username');
-    setIsAuthenticated(false);
-    setUsername('');
+  const handleLogout = async () => {
+    try {
+      // Get the security key from the environment variable
+      const securityKey = process.env.REACT_APP_SECURITY_KEY;
+
+      // Hash the security key using the Web Crypto API and encode in Base64
+      const encoder = new TextEncoder();
+      const data = encoder.encode(securityKey);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashString = String.fromCharCode(...hashArray);
+      const hashedKey = btoa(hashString);
+
+      // Prepare form data
+      const formData = new URLSearchParams();
+      formData.append('security_key', hashedKey); // Include the hashed key
+
+      await fetch('https://login.smobu.cloud/logout.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+        credentials: 'include', // Include credentials to send cookies
+      });
+
+      setIsAuthenticated(false);
+      setUsername('');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   return (
@@ -66,10 +139,7 @@ function MainApp({ isAuthenticated, username, handleLoginSuccess, handleLogout }
               {isAuthenticated ? (
                 <>
                   <span className="nav-link text-dark me-3">Welcome, {username}!</span>
-                  <button
-                    className="btn btn-link nav-link text-danger"
-                    onClick={handleLogout}
-                  >
+                  <button className="btn btn-link nav-link text-danger" onClick={handleLogout}>
                     Logout
                   </button>
                 </>
