@@ -78,8 +78,3 @@
   }
 }
 
-/* Prevent scrolling on the login page */
-body {
-  overflow: hidden; /* Disable vertical and horizontal scrolling */
-  margin: 0; /* Ensure no default margin */
-}
