@@ -24,11 +24,43 @@ function PostList({ username, isAuthenticated }) {
       post.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const styles = {
+    container: {
+      marginTop: '20px',
+    },
+    header: {
+      textAlign: 'center',
+      marginBottom: '20px',
+      color: '#007bff',
+    },
+    searchBar: {
+      marginBottom: '20px',
+    },
+    postCard: {
+      borderRadius: '10px',
+      backgroundColor: '#fff',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      marginBottom: '15px',
+    },
+    cardBody: {
+      padding: '20px',
+    },
+    noPosts: {
+      textAlign: 'center',
+      color: '#6c757d',
+    },
+  };
+
   return (
-    <div>
-      {/* Allow post creation only if logged in */}
-      {isAuthenticated && <PostForm username={username} onPostAdded={fetchPosts} />}
-      <div className="my-3">
+    <div style={styles.container} className="container">
+      {isAuthenticated && (
+        <div style={styles.postForm}>
+          <PostForm username={username} onPostAdded={fetchPosts} />
+        </div>
+      )}
+
+      {/* Search Bar */}
+      <div style={styles.searchBar}>
         <input
           type="text"
           className="form-control"
@@ -37,17 +69,25 @@ function PostList({ username, isAuthenticated }) {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
-      <div className="row">
-        {filteredPosts.map((post) => (
-          <div className="col-md-6 mb-4" key={post.id}>
-            <PostItem
-              post={post}
-              username={username}
-              isAuthenticated={isAuthenticated}
-              onPostDeleted={fetchPosts}
-            />
-          </div>
-        ))}
+
+      {/* Post Feed */}
+      <div>
+        {filteredPosts.length > 0 ? (
+          filteredPosts.map((post) => (
+            <div key={post.id} style={styles.postCard} className="card">
+              <div style={styles.cardBody}>
+                <PostItem
+                  post={post}
+                  username={username}
+                  isAuthenticated={isAuthenticated}
+                  onPostDeleted={fetchPosts}
+                />
+              </div>
+            </div>
+          ))
+        ) : (
+          <p style={styles.noPosts}>No posts found.</p>
+        )}
       </div>
     </div>
   );
